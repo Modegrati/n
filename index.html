@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeuraxTV - Play Store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-elevated: #12121a;
+      --card: #1a1a24;
+      --card-hover: #222230;
+      --border: #2a2a3a;
+      --fg: #f0f0f5;
+      --muted: #8888a0;
+      --accent: #00d4aa;
+      --accent-glow: rgba(0, 212, 170, 0.3);
+      --warning: #ffb347;
+      --success: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Animated background */
+    .bg-pattern {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .bg-pattern::before {
+      content: '';
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      background: 
+        radial-gradient(ellipse 600px 400px at 20% 30%, rgba(0, 212, 170, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 500px at 80% 70%, rgba(0, 150, 136, 0.06) 0%, transparent 70%);
+      animation: bgFloat 20s ease-in-out infinite;
+    }
+
+    @keyframes bgFloat {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(30px, -30px) rotate(1deg); }
+      66% { transform: translate(-20px, 20px) rotate(-1deg); }
+    }
+
+    /* Grid pattern overlay */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+
+    /* App icon */
+    .app-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #00d4aa 0%, #00a388 50%, #007a66 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 
+        0 8px 32px rgba(0, 212, 170, 0.3),
+        0 0 0 1px rgba(255,255,255,0.1) inset;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-icon::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+    }
+
+    /* Install button */
+    .btn-install {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      padding: 12px 32px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-install::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn-install:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+
+    .btn-install:hover::before {
+      opacity: 1;
+    }
+
+    .btn-install:active {
+      transform: translateY(0);
+    }
+
+    .btn-install.downloading {
+      background: var(--card);
+      color: var(--accent);
+      pointer-events: none;
+    }
+
+    /* Screenshots carousel */
+    .screenshots-container {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 16px 0;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .screenshot {
+      flex: 0 0 auto;
+      width: 220px;
+      height: 390px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      scroll-snap-align: start;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .screenshot:hover {
+      transform: scale(1.02);
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px rgba(0, 212, 170, 0.15);
+    }
+
+    .screenshot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Rating stars */
+    .star {
+      color: var(--warning);
+    }
+
+    .star-empty {
+      color: var(--border);
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* Review card */
+    .review-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .review-card:hover {
+      border-color: rgba(0, 212, 170, 0.3);
+      background: var(--card-hover);
+    }
+
+    /* Similar app card */
+    .similar-app {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .similar-app:hover {
+      background: var(--card-hover);
+      transform: translateX(4px);
+      border-color: rgba(0, 212, 170, 0.3);
+    }
+
+    .similar-app-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Tab buttons */
+    .tab-btn {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.3s;
+    }
+
+    .tab-btn.active {
+      color: var(--fg);
+    }
+
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 3px 3px 0 0;
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .tab-btn.active::after {
+      transform: scaleX(1);
+    }
+
+    .tab-btn:hover {
+      color: var(--fg);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.6s ease forwards;
+      opacity: 0;
+    }
+
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+
+    /* Download animation */
+    @keyframes downloadPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .downloading .btn-text {
+      display: none;
+    }
+
+    .download-progress {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .downloading .download-progress {
+      display: flex;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Focus states */
+    button:focus-visible, a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card);
+      border: 1px solid var(--accent);
+      padding: 16px 24px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-pattern"></div>
+  <div class="grid-overlay"></div>
+
+  <!-- Header -->
+  <header class="relative z-10 border-b border-[var(--border)] bg-[var(--bg-elevated)]/80 backdrop-blur-lg sticky top-0">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
+      <button class="p-2 hover:bg-[var(--card)] rounded-lg transition-colors" aria-label="Kembali">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="flex-1">
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-full px-4 py-2 flex items-center gap-3 max-w-md">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--muted)]">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" placeholder="Cari aplikasi & game" class="bg-transparent border-none outline-none flex-1 text-sm text-[var(--fg)] placeholder:text-[var(--muted)]">
+        </div>
+      </div>
+      <button class="p-2 hover:bg-[var(--card)] rounded-lg transition-colors" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="1"/>
+          <circle cx="12" cy="12" r="1"/>
+          <circle cx="12" cy="16" r="1"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="relative z-10 max-w-5xl mx-auto px-4 py-6">
+    <!-- App Header -->
+    <section class="animate-in">
+      <div class="flex flex-col sm:flex-row gap-6 items-start">
+        <div class="app-icon animate-in delay-1">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h1 class="text-3xl font-bold mb-1 animate-in delay-2">NeuraxTV</h1>
+          <p class="text-[var(--accent)] font-medium mb-2 animate-in delay-2">NeuraxMedia Entertainment</p>
+          <div class="flex items-center gap-4 text-sm text-[var(--muted)] animate-in delay-3">
+            <span>Mengandung iklan</span>
+            <span>•</span>
+            <span>In-app purchases</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Row -->
+    <section class="flex items-center gap-8 py-6 border-b border-[var(--border)] animate-in delay-2">
+      <div class="text-center">
+        <div class="flex items-center gap-1 mb-1">
+          <span class="text-xl font-bold">4.8</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <p class="text-xs text-[var(--muted)]">2.4 rb ulasan</p>
+      </div>
+      <div class="w-px h-10 bg-[var(--border)]"></div>
+      <div class="text-center">
+        <div class="text-xl font-bold mb-1">500K+</div>
+        <p class="text-xs text-[var(--muted)]">Download</p>
+      </div>
+      <div class="w-px h-10 bg-[var(--border)]"></div>
+      <div class="text-center">
+        <div class="text-xl font-bold mb-1">12+</div>
+        <p class="text-xs text-[var(--muted)]">Rating usia</p>
+      </div>
+    </section>
+
+    <!-- Install Button -->
+    <section class="py-6 flex items-center gap-4 animate-in delay-3">
+      <button class="btn-install" id="downloadBtn" onclick="downloadApp()">
+        <span class="btn-text">Install</span>
+        <div class="download-progress">
+          <div class="spinner"></div>
+          <span>Mengunduh...</span>
+        </div>
+      </button>
+      <button class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl hover:border-[var(--accent)] transition-colors" aria-label="Bagikan">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="18" cy="5" r="3"/>
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="19" r="3"/>
+          <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+        </svg>
+      </button>
+      <button class="p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl hover:border-[var(--accent)] transition-colors" aria-label="Simpan">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- Screenshots -->
+    <section class="py-4 animate-in delay-4">
+      <div class="screenshots-container" id="screenshots">
+        <!-- Screenshots will be generated by JS -->
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <section class="border-b border-[var(--border)] animate-in delay-5">
+      <div class="flex gap-2">
+        <button class="tab-btn active" data-tab="about">Tentang aplikasi</button>
+        <button class="tab-btn" data-tab="reviews">Ulasan</button>
+        <button class="tab-btn" data-tab="similar">Serupa</button>
+      </div>
+    </section>
+
+    <!-- Tab Content: About -->
+    <section id="tab-about" class="tab-content py-6">
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="md:col-span-2">
+          <h2 class="text-lg font-bold mb-4">Tentang aplikasi ini</h2>
+          <p class="text-[var(--muted)] leading-relaxed mb-4">
+            NeuraxTV adalah platform streaming entertainment terbaik untuk menikmati ribuan film, serial, dan konten eksklusif. 
+            Dengan antarmuka yang intuitif dan kualitas streaming HD, NeuraxTV menghadirkan pengalaman menonton premium langsung di genggaman Anda.
+          </p>
+          <div class="flex flex-wrap gap-2 mb-6">
+            <span class="px-3 py-1 bg-[var(--card)] border border-[var(--border)] rounded-full text-sm">Streaming</span>
+            <span class="px-3 py-1 bg-[var(--card)] border border-[var(--border)] rounded-full text-sm">Entertainment</span>
+            <span class="px-3 py-1 bg-[var(--card)] border border-[var(--border)] rounded-full text-sm">Video Player</span>
+            <span class="px-3 py-1 bg-[var(--card)] border border-[var(--border)] rounded-full text-sm">Movies</span>
+          </div>
+
+          <h3 class="font-bold mb-3">Data keamanan</h3>
+          <p class="text-[var(--muted)] text-sm mb-4">
+            Developer menyatakan bahwa aplikasi ini tidak membagikan data ke pihak lain. Pelajari lebih lanjut tentang bagaimana developer mendeklarasikan pembagian data.
+          </p>
+
+          <h3 class="font-bold mb-3">Rating usia</h3>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 bg-[var(--card)] border border-[var(--border)] rounded-lg flex items-center justify-center font-bold">
+              12+
+            </div>
+            <p class="text-sm text-[var(--muted)]">Kekerasan moderat, Ketakutan</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-bold mb-4">Info update</h3>
+          <div class="space-y-4">
+            <div class="p-4 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+              <p class="text-sm text-[var(--muted)] mb-1">Versi terbaru</p>
+              <p class="font-medium">v3.2.1</p>
+            </div>
+            <div class="p-4 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+              <p class="text-sm text-[var(--muted)] mb-1">Diupdate pada</p>
+              <p class="font-medium">15 Januari 2025</p>
+            </div>
+            <div class="p-4 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+              <p class="text-sm text-[var(--muted)] mb-1">Ukuran</p>
+              <p class="font-medium">45.2 MB</p>
+            </div>
+            <div class="p-4 bg-[var(--card)] border border-[var(--border)] rounded-xl">
+              <p class="text-sm text-[var(--muted)] mb-1">Android req</p>
+              <p class="font-medium">5.0+</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab Content: Reviews -->
+    <section id="tab-reviews" class="tab-content py-6 hidden">
+      <div class="flex items-start gap-8 mb-8">
+        <div class="text-center">
+          <div class="text-5xl font-bold mb-2">4.8</div>
+          <div class="flex gap-1 mb-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <p class="text-sm text-[var(--muted)]">2.418 ulasan</p>
+        </div>
+        <div class="flex-1 space-y-2">
+          <div class="flex items-center gap-3">
+            <span class="text-sm w-4">5</span>
+            <div class="flex-1 progress-bar"><div class="progress-fill" style="width: 78%"></div></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm w-4">4</span>
+            <div class="flex-1 progress-bar"><div class="progress-fill" style="width: 15%"></div></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm w-4">3</span>
+            <div class="flex-1 progress-bar"><div class="progress-fill" style="width: 4%"></div></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm w-4">2</span>
+            <div class="flex-1 progress-bar"><div class="progress-fill" style="width: 2%"></div></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm w-4">1</span>
+            <div class="flex-1 progress-bar"><div class="progress-fill" style="width: 1%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4" id="reviewsList">
+        <!-- Reviews will be generated by JS -->
+      </div>
+    </section>
+
+    <!-- Tab Content: Similar -->
+    <section id="tab-similar" class="tab-content py-6 hidden">
+      <h2 class="text-lg font-bold mb-4">Aplikasi serupa</h2>
+      <div class="space-y-3" id="similarApps">
+        <!-- Similar apps will be generated by JS -->
+      </div>
+    </section>
+
+    <!-- Developer Info -->
+    <section class="py-8 border-t border-[var(--border)] mt-8">
+      <h2 class="text-lg font-bold mb-4">Info developer</h2>
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--accent)] to-teal-700 flex items-center justify-center">
+          <span class="text-xl font-bold text-black">N</span>
+        </div>
+        <div>
+          <p class="font-medium">NeuraxMedia Entertainment</p>
+          <p class="text-sm text-[var(--muted)]">Verified Developer</p>
+        </div>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="#" class="px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--accent)] transition-colors">
+          Hubungi developer
+        </a>
+        <a href="#" class="px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--accent)] transition-colors">
+          Kebijakan privasi
+        </a>
+        <a href="#" class="px-4 py-2 bg-[var(--card)] border border-[var(--border)] rounded-xl text-sm hover:border-[var(--accent)] transition-colors">
+          Lihat semua aplikasi
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <span id="toastMessage">Download dimulai!</span>
+  </div>
+
+  <script>
+    // Data
+    const screenshots = [
+      { id: 1, title: 'Home Screen', gradient: 'linear-gradient(180deg, #0d1f2d 0%, #0a1628 100%)' },
+      { id: 2, title: 'Movie Detail', gradient: 'linear-gradient(180deg, #1a0a2e 0%, #16082a 100%)' },
+      { id: 3, title: 'Player View', gradient: 'linear-gradient(180deg, #0a1f1a 0%, #081815 100%)' },
+      { id: 4, title: 'Search Results', gradient: 'linear-gradient(180deg, #1f1a0a 0%, #181508 100%)' },
+      { id: 5, title: 'Settings', gradient: 'linear-gradient(180deg, #1a0a1f 0%, #150818 100%)' },
+    ];
+
+    const reviews = [
+      { name: 'Rizky Pratama', avatar: 'R', rating: 5, date: '12 Januari 2025', text: 'Aplikasi streaming terbaik! Kualitas video HD dan tidak ada buffering sama sekali. Sangat recommended untuk pecinta film.' },
+      { name: 'Dewi Sartika', avatar: 'D', rating: 5, date: '10 Januari 2025', text: 'Interface yang sangat user-friendly. Banyak pilihan film dan series. Love it!' },
+      { name: 'Ahmad Fauzi', avatar: 'A', rating: 4, date: '8 Januari 2025', text: 'Bagus overall, tapi kadang ada bug minor saat download offline. Harap diperbaiki ya dev!' },
+      { name: 'Siti Nurhaliza', avatar: 'S', rating: 5, date: '5 Januari 2025', text: 'Akhirnya ada aplikasi streaming lokal yang berkualitas. Support terus developer Indonesia!' },
+    ];
+
+    const similarApps = [
+      { name: 'StreamMax', developer: 'MediaTech Inc', rating: '4.5', downloads: '1M+', color: '#6366f1' },
+      { name: 'VideoHub Pro', developer: 'Entertainment Labs', rating: '4.3', downloads: '500K+', color: '#f43f5e' },
+      { name: 'CinemaBox', developer: 'FilmStream Co', rating: '4.6', downloads: '2M+', color: '#f59e0b' },
+      { name: 'PlayTime', developer: 'MediaGroup', rating: '4.2', downloads: '800K+', color: '#10b981' },
+    ];
+
+    // Initialize screenshots
+    function initScreenshots() {
+      const container = document.getElementById('screenshots');
+      container.innerHTML = screenshots.map(s => `
+        <div class="screenshot" style="background: ${s.gradient}">
+          <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="2" y1="7" x2="7" y2="7"/>
+              <line x1="2" y1="17" x2="7" y2="17"/>
+              <line x1="17" y1="7" x2="22" y2="7"/>
+              <line x1="17" y1="17" x2="22" y2="17"/>
+            </svg>
+            <span class="text-xs text-white/40 mt-2">${s.title}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Initialize reviews
+    function initReviews() {
+      const container = document.getElementById('reviewsList');
+      container.innerHTML = reviews.map(r => `
+        <div class="review-card">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-[var(--card-hover)] flex items-center justify-center font-bold text-[var(--accent)]">
+              ${r.avatar}
+            </div>
+            <div>
+              <p class="font-medium">${r.name}</p>
+              <p class="text-xs text-[var(--muted)]">${r.date}</p>
+            </div>
+          </div>
+          <div class="flex gap-0.5 mb-2">
+            ${Array(5).fill(0).map((_, i) => `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="${i < r.rating ? 'var(--warning)' : 'var(--border)'}">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            `).join('')}
+          </div>
+          <p class="text-sm text-[var(--muted)]">${r.text}</p>
+        </div>
+      `).join('');
+    }
+
+    // Initialize similar apps
+    function initSimilarApps() {
+      const container = document.getElementById('similarApps');
+      container.innerHTML = similarApps.map(app => `
+        <div class="similar-app">
+          <div class="similar-app-icon" style="background: linear-gradient(135deg, ${app.color}, ${app.color}88)"></div>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium truncate">${app.name}</p>
+            <p class="text-sm text-[var(--muted)]">${app.developer}</p>
+            <div class="flex items-center gap-2 text-xs text-[var(--muted)] mt-1">
+              <span>${app.rating}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--warning)"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span>•</span>
+              <span>${app.downloads}</span>
+            </div>
+          </div>
+          <button class="px-4 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--card)] rounded-lg transition-colors">
+            Install
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Tab switching
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        tabContents.forEach(content => {
+          content.classList.add('hidden');
+          if (content.id === `tab-${tabId}`) {
+            content.classList.remove('hidden');
+            content.style.animation = 'fadeInUp 0.4s ease forwards';
+          }
+        });
+      });
+    });
+
+    // Download function
+    function downloadApp() {
+      const btn = document.getElementById('downloadBtn');
+      btn.classList.add('downloading');
+      
+      // Create hidden anchor to trigger download
+      const link = document.createElement('a');
+      link.href = 'https://files.appsgeyser.com/NeuraxTV_19634344.apk';
+      link.download = 'https://files.appsgeyser.com/NeuraxTV_19634344.apk';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show toast
+      showToast('Download NeuraxTV.apk dimulai!');
+      
+      // Reset button after delay
+      setTimeout(() => {
+        btn.classList.remove('downloading');
+      }, 3000);
+    }
+
+    // Toast notification
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      initScreenshots();
+      initReviews();
+      initSimilarApps();
+      
+      // Observe animated elements
+      document.querySelectorAll('.animate-in').forEach(el => {
+        observer.observe(el);
+      });
+    });
+
+    // Keyboard accessibility for tabs
+    tabBtns.forEach((btn, index) => {
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+          const next = tabBtns[(index + 1) % tabBtns.length];
+          next.focus();
+          next.click();
+        } else if (e.key === 'ArrowLeft') {
+          const prev = tabBtns[(index - 1 + tabBtns.length) % tabBtns.length];
+          prev.focus();
+          prev.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
